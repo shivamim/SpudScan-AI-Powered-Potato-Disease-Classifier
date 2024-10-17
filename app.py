@@ -8,10 +8,16 @@ import os
 # Set page configuration (optional)
 st.set_page_config(page_title="Potato Disease Classifier", page_icon="🥔", layout="wide")
 
+# Debugging: List contents of the current directory and the model directory
+st.write("Contents of current directory:", os.listdir('.'))
+if os.path.exists('model'):
+    st.write("Contents of model directory:", os.listdir('model'))
+else:
+    st.write("Model directory not found")
+
 # Load the model
 @st.cache_resource
 def load_model():
-    # When deployed, the model should be in the root directory
     model_path = 'model'
     
     print(f"Looking for model at: {model_path}")  # Debugging print
@@ -20,7 +26,8 @@ def load_model():
         raise FileNotFoundError(f"Model directory not found at {model_path}")
     
     try:
-        model = tf.saved_model.load(model_path)
+        options = tf.saved_model.LoadOptions(experimental_io_device='/job:localhost')
+        model = tf.saved_model.load(model_path, options=options)
         return model
     except Exception as e:
         print(f"Error loading model: {str(e)}")
@@ -36,7 +43,7 @@ except Exception as e:
 # Define the class labels
 class_names = ['Healthy', 'Early Blight', 'Late Blight']  # Adjust this list to match your model's output
 
-# CSS to make the app more interactive and visually appealing
+# CSS styles (unchanged)
 st.markdown("""
     <style>
     .main {
@@ -89,8 +96,9 @@ def preprocess_image(image_data):
 # Prediction function
 def predict(image):
     processed_image = preprocess_image(image)
-    predictions = model(tf.constant(processed_image))
-    return predictions
+    infer = model.signatures["serving_default"]
+    predictions = infer(tf.constant(processed_image))
+    return predictions['dense_2']
 
 # File uploader and prediction logic
 uploaded_file = st.file_uploader("Choose an image of a potato leaf...", type=["jpg", "png", "jpeg"])
