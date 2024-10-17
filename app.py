@@ -116,19 +116,17 @@ if uploaded_file is not None:
     # Preprocess the image and make prediction
     try:
         predictions = predict(image)
-        predicted_class_index = tf.argmax(predictions, axis=1)[0].numpy()
-        predicted_class = class_names[predicted_class_index]
         
+        # Display only the highest probability class
+        probabilities = tf.nn.softmax(predictions[0]).numpy()
+        predicted_class_index = tf.argmax(probabilities).numpy()
+        predicted_class = class_names[predicted_class_index]
+        highest_probability = probabilities[predicted_class_index]
+
         # Show the result
-        st.markdown("<div id='results'></div>", unsafe_allow_html=True)
         st.markdown("<h2>Prediction Result</h2>", unsafe_allow_html=True)
         st.markdown(f"<div class='result-box'>Predicted Disease: <b>{predicted_class}</b></div>", unsafe_allow_html=True)
-        
-        # Display probabilities
-        probabilities = tf.nn.softmax(predictions[0]).numpy()
-        st.write("Prediction Probabilities:")
-        for i, (class_name, probability) in enumerate(zip(class_names, probabilities)):
-            st.write(f"{class_name}: {probability:.2%}")
+        st.write(f"Probability: {int(highest_probability * 100)}%")  # Display the highest probability as a percentage
     
     except Exception as e:
         st.error(f"An error occurred during prediction: {str(e)}")
