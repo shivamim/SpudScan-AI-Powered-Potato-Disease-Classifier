@@ -1,25 +1,37 @@
 import streamlit as st
 import tensorflow as tf
+from tensorflow import keras
 from PIL import Image, ImageOps
 import numpy as np
-import base64
-from keras.layers import TFSMLayer
+import os
 
 # Set page configuration (optional)
 st.set_page_config(page_title="Potato Disease Classifier", page_icon="🥔", layout="wide")
 
 # Load the model
-from keras.layers import TFSMLayer
-
-# Load the model
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def load_model():
-    # Adjust the model path accordingly
-    model_path = 'model'  # Path to the directory containing the model
-    # Use TFSMLayer to load the model
-    model = TFSMLayer(model_path, call_endpoint='serving_default')
-    return model
-model = load_model()
+    # When deployed, the model should be in the root directory
+    model_path = 'model'
+    
+    print(f"Looking for model at: {model_path}")  # Debugging print
+    
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Model directory not found at {model_path}")
+    
+    try:
+        model = tf.saved_model.load(model_path)
+        return model
+    except Exception as e:
+        print(f"Error loading model: {str(e)}")
+        raise
+
+try:
+    model = load_model()
+    st.success("Model loaded successfully!")
+except Exception as e:
+    st.error(f"Failed to load model: {str(e)}")
+    st.stop()
 
 # Define the class labels
 class_names = ['Healthy', 'Early Blight', 'Late Blight']  # Adjust this list to match your model's output
@@ -62,15 +74,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# JavaScript for interactivity (e.g., scroll to result)
-st.markdown("""
-    <script>
-    function scrollToResults() {
-        document.getElementById("results").scrollIntoView();
-    }
-    </script>
-""", unsafe_allow_html=True)
-
 # Application header
 st.markdown("<h1>Potato Disease Classifier 🥔</h1>", unsafe_allow_html=True)
 st.write("Upload a potato leaf image to classify the disease.")
@@ -83,6 +86,12 @@ def preprocess_image(image_data):
     image = np.expand_dims(image, axis=0)  # Add batch dimension
     return image
 
+# Prediction function
+def predict(image):
+    processed_image = preprocess_image(image)
+    predictions = model(tf.constant(processed_image))
+    return predictions
+
 # File uploader and prediction logic
 uploaded_file = st.file_uploader("Choose an image of a potato leaf...", type=["jpg", "png", "jpeg"])
 
@@ -90,19 +99,26 @@ if uploaded_file is not None:
     # Show the uploaded image
     image = Image.open(uploaded_file)
     st.image(image, caption='Uploaded Image', use_column_width=True)
-
+    
     # Preprocess the image and make prediction
-    processed_image = preprocess_image(image)
-    predictions = model.predict(processed_image)
-    predicted_class = class_names[np.argmax(predictions)]
-
-    # Show the result with a button to scroll to it
-    st.markdown("<div id='results'></div>", unsafe_allow_html=True)
-    st.markdown("<h2>Prediction Result</h2>", unsafe_allow_html=True)
-    st.markdown(f"<div class='result-box'>Predicted Disease: <b>{predicted_class}</b></div>", unsafe_allow_html=True)
-
-    # Scroll to result button
-    st.button("See Prediction", on_click=lambda: st.script("scrollToResults()"))
+    try:
+        predictions = predict(image)
+        predicted_class_index = tf.argmax(predictions, axis=1)[0].numpy()
+        predicted_class = class_names[predicted_class_index]
+        
+        # Show the result
+        st.markdown("<div id='results'></div>", unsafe_allow_html=True)
+        st.markdown("<h2>Prediction Result</h2>", unsafe_allow_html=True)
+        st.markdown(f"<div class='result-box'>Predicted Disease: <b>{predicted_class}</b></div>", unsafe_allow_html=True)
+        
+        # Display probabilities
+        probabilities = tf.nn.softmax(predictions[0]).numpy()
+        st.write("Prediction Probabilities:")
+        for i, (class_name, probability) in enumerate(zip(class_names, probabilities)):
+            st.write(f"{class_name}: {probability:.2%}")
+    
+    except Exception as e:
+        st.error(f"An error occurred during prediction: {str(e)}")
 
 # Footer (Optional)
 st.markdown("""
