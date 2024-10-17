@@ -87,7 +87,7 @@ st.write("Upload a potato leaf image to classify the disease.")
 
 # Function to preprocess the uploaded image
 def preprocess_image(image_data):
-    image = ImageOps.fit(image_data, (256, 256), Image.ANTIALIAS)
+    image = ImageOps.fit(image_data, (256, 256), Image.LANCZOS)
     image = np.asarray(image)
     image = image.astype(np.float32) / 255.0  # Normalize the image to [0, 1]
     image = np.expand_dims(image, axis=0)  # Add batch dimension
