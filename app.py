@@ -10,7 +10,7 @@ st.set_page_config(page_title="Potato Disease Classifier", page_icon="🥔", lay
 # Load the model
 @st.cache(allow_output_mutation=True)
 def load_model():
-    model = tf.keras.models.load_model('C:\data science\langchain-env\saved_model')  # Adjust the path accordingly
+    model = tf.keras.models.load_model('model')  # Adjust the path accordingly
     return model
 
 model = load_model()
