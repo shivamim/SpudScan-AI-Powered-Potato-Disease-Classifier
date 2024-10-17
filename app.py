@@ -43,7 +43,7 @@ except Exception as e:
 # Define the class labels
 class_names = ['Healthy', 'Early Blight', 'Late Blight']  # Adjust this list to match your model's output
 
-# CSS styles (unchanged)
+# CSS styles
 st.markdown("""
     <style>
     .main {
@@ -97,12 +97,13 @@ def preprocess_image(image_data):
 def predict(image):
     processed_image = preprocess_image(image)
     infer = model.signatures["serving_default"]
+    # Get predictions from the model
     predictions = infer(tf.constant(processed_image))
-
-    # Check the predictions structure for debugging
-    print("Predictions:", predictions)  # This line will print the output to the console
-
-    return predictions  # Return the raw predictions tensor
+    
+    # Extract the correct tensor from the predictions dictionary
+    output_tensor = predictions['output_0']  # Change 'output_0' if necessary
+    
+    return output_tensor
 
 # File uploader and prediction logic
 uploaded_file = st.file_uploader("Choose an image of a potato leaf...", type=["jpg", "png", "jpeg"])
@@ -115,18 +116,16 @@ if uploaded_file is not None:
     # Preprocess the image and make prediction
     try:
         predictions = predict(image)
-        
-        # Assuming predictions is a tensor of shape (1, num_classes)
-        probabilities = tf.nn.softmax(predictions).numpy()[0]  # Convert to probabilities
-        
-        predicted_class_index = np.argmax(probabilities)  # Get index of the highest probability
-        predicted_class = class_names[predicted_class_index]  # Map index to class name
+        predicted_class_index = tf.argmax(predictions, axis=1)[0].numpy()
+        predicted_class = class_names[predicted_class_index]
         
         # Show the result
+        st.markdown("<div id='results'></div>", unsafe_allow_html=True)
         st.markdown("<h2>Prediction Result</h2>", unsafe_allow_html=True)
         st.markdown(f"<div class='result-box'>Predicted Disease: <b>{predicted_class}</b></div>", unsafe_allow_html=True)
         
         # Display probabilities
+        probabilities = tf.nn.softmax(predictions[0]).numpy()
         st.write("Prediction Probabilities:")
         for i, (class_name, probability) in enumerate(zip(class_names, probabilities)):
             st.write(f"{class_name}: {probability:.2%}")
