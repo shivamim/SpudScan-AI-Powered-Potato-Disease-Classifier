@@ -1,6 +1,5 @@
 import streamlit as st
 import tensorflow as tf
-from tensorflow import keras
 from PIL import Image, ImageOps
 import numpy as np
 import os
@@ -97,12 +96,8 @@ def preprocess_image(image_data):
 def predict(image):
     processed_image = preprocess_image(image)
     infer = model.signatures["serving_default"]
-    
     # Get predictions from the model
     predictions = infer(tf.constant(processed_image))
-
-    # Debugging: Print the prediction output shape and value
-    st.write("Raw predictions:", predictions)
     
     # Extract the correct tensor from the predictions dictionary
     output_tensor = predictions['output_0']  # Change 'output_0' if necessary
@@ -123,10 +118,6 @@ if uploaded_file is not None:
         
         # Display only the highest probability class
         probabilities = tf.nn.softmax(predictions[0]).numpy()
-        
-        # Debugging: Print probabilities for each class
-        st.write("Probabilities:", probabilities)
-        
         predicted_class_index = tf.argmax(probabilities).numpy()
         predicted_class = class_names[predicted_class_index]
         highest_probability = probabilities[predicted_class_index]
