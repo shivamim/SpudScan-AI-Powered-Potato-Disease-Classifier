@@ -96,11 +96,12 @@ def preprocess_image(image_data):
 def predict(image):
     processed_image = preprocess_image(image)
     infer = model.signatures["serving_default"]
+    
     # Get predictions from the model
     predictions = infer(tf.constant(processed_image))
     
-    # Extract the correct tensor from the predictions dictionary
-    output_tensor = predictions['output_0']  # Change 'output_0' if necessary
+    # Use the correct output tensor name 'dense_5'
+    output_tensor = predictions['dense_5']  # Use the output layer name here
     
     return output_tensor
 
@@ -116,16 +117,16 @@ if uploaded_file is not None:
     try:
         predictions = predict(image)
         
-        # Display only the highest probability class
+        # Calculate probabilities and get the predicted class
         probabilities = tf.nn.softmax(predictions[0]).numpy()
         predicted_class_index = tf.argmax(probabilities).numpy()
         predicted_class = class_names[predicted_class_index]
-        highest_probability = probabilities[predicted_class_index]
+        confidence_score = probabilities[predicted_class_index] * 100  # Convert to percentage
 
         # Show the result
         st.markdown("<h2>Prediction Result</h2>", unsafe_allow_html=True)
         st.markdown(f"<div class='result-box'>Predicted Disease: <b>{predicted_class}</b></div>", unsafe_allow_html=True)
-        st.write(f"Probability: {highest_probability * 100:.2f}%")  # Display the highest probability as a percentage
+        st.write(f"Confidence Score: {confidence_score:.2f}%")  # Display confidence score as a percentage
     
     except Exception as e:
         st.error(f"An error occurred during prediction: {str(e)}")
