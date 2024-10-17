@@ -100,8 +100,8 @@ def predict(image):
     # Get predictions from the model
     predictions = infer(tf.constant(processed_image))
     
-    # Use the correct output tensor name 'dense_5'
-    output_tensor = predictions['dense_5']  # Use the output layer name here
+    # Use the correct output tensor name 'output_0'
+    output_tensor = predictions['output_0']  # Corrected to use 'output_0'
     
     return output_tensor
 
