@@ -3,16 +3,22 @@ import tensorflow as tf
 from PIL import Image, ImageOps
 import numpy as np
 import base64
+from keras.layers import TFSMLayer
 
 # Set page configuration (optional)
 st.set_page_config(page_title="Potato Disease Classifier", page_icon="🥔", layout="wide")
 
 # Load the model
+from keras.layers import TFSMLayer
+
+# Load the model
 @st.cache(allow_output_mutation=True)
 def load_model():
-    model = tf.keras.models.load_model('model')  # Adjust the path accordingly
+    # Adjust the model path accordingly
+    model_path = 'model'  # Path to the directory containing the model
+    # Use TFSMLayer to load the model
+    model = TFSMLayer(model_path, call_endpoint='serving_default')
     return model
-
 model = load_model()
 
 # Define the class labels
